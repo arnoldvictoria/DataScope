@@ -1,0 +1,37 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug (Incremental Build)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/DataScope.exe",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build DataScope (Incremental)",
+            "miDebuggerPath": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/gdb.exe",
+            "stopAtEntry": false,
+            "externalConsole": false
+        },
+        {
+            "name": "Debug (No Build)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/DataScope.exe",
+            "cwd": "${workspaceFolder}",
+            "miDebuggerPath": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/gdb.exe",
+            "stopAtEntry": false,
+            "externalConsole": false
+        },
+        {
+            "name": "Run (Full Build)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/DataScope.exe",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build DataScope (Full)",
+            "miDebuggerPath": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/gdb.exe",
+            "stopAtEntry": false,
+            "externalConsole": false
+        }
+    ]
+}

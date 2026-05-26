@@ -1,0 +1,149 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Build DataScope (Full)",
+            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "args": [
+                "-std=c++17",
+                "-Wall",
+                "-O2",
+                "-DUNICODE",
+                "-static",
+                "-I", "third_party/imgui",
+                "-I", "third_party/imgui/backends",
+                "-I", "third_party/implot",
+                "-I", "src",
+                "src/main.cpp",
+                "src/parser.cpp",
+                "src/serial_reader.cpp",
+                "third_party/imgui/imgui.cpp",
+                "third_party/imgui/imgui_draw.cpp",
+                "third_party/imgui/imgui_tables.cpp",
+                "third_party/imgui/imgui_widgets.cpp",
+                "third_party/imgui/backends/imgui_impl_win32.cpp",
+                "third_party/imgui/backends/imgui_impl_opengl3.cpp",
+                "third_party/implot/implot.cpp",
+                "third_party/implot/implot_items.cpp",
+                "-o", "${workspaceFolder}/build/DataScope.exe",
+                "-lopengl32",
+                "-lgdi32",
+                "-ldwmapi",
+                "-lsetupapi",
+                "-luuid",
+                "-lole32"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "cppbuild",
+            "label": "compile src",
+            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "args": [
+                "-std=c++17",
+                "-Wall",
+                "-O2",
+                "-DUNICODE",
+                "-static",
+                "-I", "third_party/imgui",
+                "-I", "third_party/imgui/backends",
+                "-I", "third_party/implot",
+                "-I", "src",
+                "-c", "src/main.cpp",
+                "-o", "${workspaceFolder}/build/main.o"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": "build"
+        },
+        {
+            "type": "cppbuild",
+            "label": "compile parser",
+            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "args": [
+                "-std=c++17",
+                "-Wall",
+                "-O2",
+                "-DUNICODE",
+                "-static",
+                "-I", "third_party/imgui",
+                "-I", "third_party/imgui/backends",
+                "-I", "third_party/implot",
+                "-I", "src",
+                "-c", "src/parser.cpp",
+                "-o", "${workspaceFolder}/build/parser.o"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": "build"
+        },
+        {
+            "type": "cppbuild",
+            "label": "compile serial",
+            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "args": [
+                "-std=c++17",
+                "-Wall",
+                "-O2",
+                "-DUNICODE",
+                "-static",
+                "-I", "third_party/imgui",
+                "-I", "third_party/imgui/backends",
+                "-I", "third_party/implot",
+                "-I", "src",
+                "-c", "src/serial_reader.cpp",
+                "-o", "${workspaceFolder}/build/serial_reader.o"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": "build"
+        },
+        {
+            "type": "cppbuild",
+            "label": "Build DataScope (Incremental)",
+            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "args": [
+                "-std=c++17",
+                "-static",
+                "${workspaceFolder}/build/main.o",
+                "${workspaceFolder}/build/parser.o",
+                "${workspaceFolder}/build/serial_reader.o",
+                "${workspaceFolder}/build/imgui.o",
+                "${workspaceFolder}/build/imgui_draw.o",
+                "${workspaceFolder}/build/imgui_tables.o",
+                "${workspaceFolder}/build/imgui_widgets.o",
+                "${workspaceFolder}/build/imgui_impl_win32.o",
+                "${workspaceFolder}/build/imgui_impl_opengl3.o",
+                "${workspaceFolder}/build/implot.o",
+                "${workspaceFolder}/build/implot_items.o",
+                "-o", "${workspaceFolder}/build/DataScope.exe",
+                "-lopengl32",
+                "-lgdi32",
+                "-ldwmapi",
+                "-lsetupapi",
+                "-luuid",
+                "-lole32"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": "build",
+            "dependsOn": ["compile src", "compile parser", "compile serial"]
+        }
+    ]
+}

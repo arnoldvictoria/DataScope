@@ -1,0 +1,7 @@
+build/
+*.o
+*.exe
+.claude/
+.vscode/.claude/
+doc/*.pdf
+data/
