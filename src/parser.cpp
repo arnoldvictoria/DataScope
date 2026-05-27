@@ -58,7 +58,7 @@ void DataParser::pushRecord(const RawRecord& rec) {
         it = m_channelIndex.find(rec.channel);
     }
     ChannelSeries& cs = m_series[it->second];
-    cs.xValues.push_back((float)rec.lineNumber);
+    cs.xValues.push_back((float)cs.xValues.size());
     float y = (float)rec.value2;
     if (rec.channel == "V_D" || rec.channel == "V6" || rec.channel == "V7") {
         y /= 1000.0f;

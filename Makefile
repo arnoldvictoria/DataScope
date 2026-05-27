@@ -1,7 +1,7 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -O2 -DUNICODE
 LDFLAGS  := -static
-LDLIBS   := -lopengl32 -lgdi32 -ldwmapi
+LDLIBS   := -lopengl32 -lgdi32 -ldwmapi -lsetupapi
 
 IMGUI_DIR  := third_party/imgui
 IMPLOT_DIR := third_party/implot
@@ -13,6 +13,7 @@ INCLUDES := -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I$(IMPLOT_DIR) -I$(SRC_DIR)
 
 SOURCES := $(SRC_DIR)/main.cpp \
            $(SRC_DIR)/parser.cpp \
+           $(SRC_DIR)/serial_reader.cpp \
            $(IMGUI_DIR)/imgui.cpp \
            $(IMGUI_DIR)/imgui_draw.cpp \
            $(IMGUI_DIR)/imgui_tables.cpp \
@@ -38,6 +39,8 @@ $(TARGET): $(BUILD_DIR) $(OBJS)
 $(BUILD_DIR)/main.o:                      $(SRC_DIR)/main.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 $(BUILD_DIR)/parser.o:                    $(SRC_DIR)/parser.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+$(BUILD_DIR)/serial_reader.o:             $(SRC_DIR)/serial_reader.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 $(BUILD_DIR)/imgui.o:                     $(IMGUI_DIR)/imgui.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@

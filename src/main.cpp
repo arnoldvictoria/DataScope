@@ -14,6 +14,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -64,6 +65,7 @@ struct AppState {
     char         statusMsg[128] = "";
     char         sendBuf[256] = "";
     int          presetIdx = 0;
+    char         exportPath[256] = "export.csv";
 };
 
 static const int kBaudRates[] = { 9600, 19200, 38400, 57600, 76800, 115200, 230400 };
@@ -270,6 +272,106 @@ static void renderUI(AppState& app) {
         }
 
         ImPlot::EndPlot();
+    }
+
+    ImGui::End();
+
+    // --- Data Table ---
+    ImGui::Begin("Data Table", nullptr, ImGuiWindowFlags_NoCollapse);
+    ImGui::SetWindowPos({1295, 30}, ImGuiCond_FirstUseEver);
+    ImGui::SetWindowSize({400, 700}, ImGuiCond_FirstUseEver);
+
+    if (app.dataLoaded) {
+        // Collect visible channel indices
+        std::vector<size_t> visIdx;
+        for (size_t i = 0; i < series.size(); i++) {
+            if (app.visible[i]) visIdx.push_back(i);
+        }
+
+        if (visIdx.empty()) {
+            ImGui::TextDisabled("No channels selected");
+        } else {
+            // --- Export CSV ---
+            ImGui::SetNextItemWidth(160);
+            ImGui::InputText("##export", app.exportPath, sizeof(app.exportPath));
+            ImGui::SameLine();
+            if (ImGui::Button("Export CSV")) {
+                std::ofstream f(app.exportPath);
+                if (f.is_open()) {
+                    f << "#";
+                    for (size_t ci = 0; ci < visIdx.size(); ci++) {
+                        f << "," << series[visIdx[ci]].name;
+                    }
+                    f << "\n";
+                    size_t maxRows = 0;
+                    for (size_t idx : visIdx) {
+                        maxRows = (std::max)(maxRows, series[idx].yValues.size());
+                    }
+                    for (size_t row = 0; row < maxRows; row++) {
+                        f << (row + 1);
+                        for (size_t ci = 0; ci < visIdx.size(); ci++) {
+                            f << ",";
+                            const auto& ch = series[visIdx[ci]];
+                            if (row < ch.yValues.size()) {
+                                f << ch.yValues[row];
+                            }
+                        }
+                        f << "\n";
+                    }
+                    f.close();
+                    std::snprintf(app.statusMsg, sizeof(app.statusMsg),
+                                  "Exported %zu rows to %s", maxRows, app.exportPath);
+                } else {
+                    std::snprintf(app.statusMsg, sizeof(app.statusMsg),
+                                  "Failed to write %s", app.exportPath);
+                }
+            }
+            if (app.statusMsg[0]) {
+                ImGui::SameLine();
+                ImGui::TextDisabled("%s", app.statusMsg);
+            }
+
+            size_t maxRows = 0;
+            for (size_t idx : visIdx) {
+                maxRows = (std::max)(maxRows, series[idx].yValues.size());
+            }
+
+            if (ImGui::BeginTable("##datatable", (int)visIdx.size() + 1,
+                                  ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY |
+                                  ImGuiTableFlags_Hideable)) {
+                ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 40.0f);
+                for (size_t ci = 0; ci < visIdx.size(); ci++) {
+                    const auto& ch = series[visIdx[ci]];
+                    char hdr[64];
+                    std::snprintf(hdr, sizeof(hdr), "%s", ch.name.c_str());
+                    ImGui::TableSetupColumn(hdr, ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                }
+                ImGui::TableHeadersRow();
+
+                ImGuiListClipper clipper;
+                clipper.Begin((int)maxRows);
+                while (clipper.Step()) {
+                    for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("%d", row + 1);
+                        for (size_t ci = 0; ci < visIdx.size(); ci++) {
+                            ImGui::TableSetColumnIndex((int)ci + 1);
+                            const auto& ch = series[visIdx[ci]];
+                            if ((size_t)row < ch.yValues.size()) {
+                                ImGui::Text("%.1f", ch.yValues[row]);
+                            } else {
+                                ImGui::TextDisabled("--");
+                            }
+                        }
+                    }
+                }
+                ImGui::EndTable();
+            }
+        }
+    } else {
+        ImGui::TextDisabled("No data loaded");
     }
 
     ImGui::End();
