@@ -5,3 +5,4 @@ build/
 .vscode/.claude/
 doc/*.pdf
 data/
+third_party/

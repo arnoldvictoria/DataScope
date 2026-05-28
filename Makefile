@@ -1,7 +1,7 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -O2 -DUNICODE
 LDFLAGS  := -static
-LDLIBS   := -lopengl32 -lgdi32 -ldwmapi -lsetupapi
+LDLIBS   := -lopengl32 -lgdi32 -ldwmapi -lsetupapi -luuid -lole32
 
 IMGUI_DIR  := third_party/imgui
 IMPLOT_DIR := third_party/implot

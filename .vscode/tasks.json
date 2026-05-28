@@ -4,7 +4,7 @@
         {
             "type": "cppbuild",
             "label": "Build DataScope (Full)",
-            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "command": "C:/Program Files/MinGW/mingw64/bin/g++.exe",
             "args": [
                 "-std=c++17",
                 "-Wall",
@@ -46,7 +46,7 @@
         {
             "type": "cppbuild",
             "label": "compile src",
-            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "command": "C:/Program Files/MinGW/mingw64/bin/g++.exe",
             "args": [
                 "-std=c++17",
                 "-Wall",
@@ -69,7 +69,7 @@
         {
             "type": "cppbuild",
             "label": "compile parser",
-            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "command": "C:/Program Files/MinGW/mingw64/bin/g++.exe",
             "args": [
                 "-std=c++17",
                 "-Wall",
@@ -92,7 +92,7 @@
         {
             "type": "cppbuild",
             "label": "compile serial",
-            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "command": "C:/Program Files/MinGW/mingw64/bin/g++.exe",
             "args": [
                 "-std=c++17",
                 "-Wall",
@@ -115,7 +115,7 @@
         {
             "type": "cppbuild",
             "label": "Build DataScope (Incremental)",
-            "command": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/g++.exe",
+            "command": "C:/Program Files/MinGW/mingw64/bin/g++.exe",
             "args": [
                 "-std=c++17",
                 "-static",

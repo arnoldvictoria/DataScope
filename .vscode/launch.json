@@ -8,9 +8,10 @@
             "program": "${workspaceFolder}/build/DataScope.exe",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build DataScope (Incremental)",
-            "miDebuggerPath": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/gdb.exe",
+            "miDebuggerPath": "C:/Program Files/MinGW/mingw64/bin/gdb.exe",
             "stopAtEntry": false,
-            "externalConsole": false
+            "externalConsole": false,
+            "enableBreakpointsLocations": false
         },
         {
             "name": "Debug (No Build)",
@@ -18,9 +19,10 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/DataScope.exe",
             "cwd": "${workspaceFolder}",
-            "miDebuggerPath": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/gdb.exe",
+            "miDebuggerPath": "C:/Program Files/MinGW/mingw64/bin/gdb.exe",
             "stopAtEntry": false,
-            "externalConsole": false
+            "externalConsole": false,
+            "enableBreakpointsLocations": false
         },
         {
             "name": "Run (Full Build)",
@@ -29,9 +31,10 @@
             "program": "${workspaceFolder}/build/DataScope.exe",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build DataScope (Full)",
-            "miDebuggerPath": "D:/MySoftware/MinGW/Mingw64/Mingw64/bin/gdb.exe",
+            "miDebuggerPath": "C:/Program Files/MinGW/mingw64/bin/gdb.exe",
             "stopAtEntry": false,
-            "externalConsole": false
+            "externalConsole": false,
+            "enableBreakpointsLocations": false
         }
     ]
 }
