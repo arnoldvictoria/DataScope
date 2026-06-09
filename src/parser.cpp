@@ -33,67 +33,87 @@ bool DataParser::parseOneLine(const char* line, RawRecord& outRec) {
     outRec.channel.assign(nameStart, p - nameStart);
     p++; // skip ':'
 
-    // read value1 until ','
-    char* end;
-    outRec.value1 = (int)std::strtol(p, &end, 10);
-    if (p == end) return false;
-    p = end;
-    if (*p != ',') return false;
-    p++; // skip ','
+    outRec.values.clear();
 
-    // read value2
-    outRec.value2 = (int)std::strtol(p, &end, 10);
-    if (p == end) return false;
+    // parse comma-separated integers
+    while (*p) {
+        char* end;
+        int val = (int)std::strtol(p, &end, 10);
+        if (p == end) break;
+        outRec.values.push_back(val);
+        p = end;
+        if (*p != ',') break;
+        p++; // skip ','
+    }
 
-    return true;
+    return !outRec.values.empty();
+}
+
+static bool hasPrefix(const std::string& s, const std::string& prefix) {
+    return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
 }
 
 void DataParser::pushRecord(const RawRecord& rec) {
-    auto it = m_channelIndex.find(rec.channel);
-    if (it == m_channelIndex.end()) {
-        ChannelSeries cs;
-        cs.name = rec.channel;
-        m_channelIndex[rec.channel] = m_series.size();
-        m_series.push_back(std::move(cs));
-        it = m_channelIndex.find(rec.channel);
+    size_t nv = rec.values.size();
+    auto ait = m_aliases.find(rec.channel);
+    bool expand = (nv > 2) || (ait != m_aliases.end());
+
+    if (expand) {
+        const std::vector<std::string>* aliases = (ait != m_aliases.end()) ? &ait->second : nullptr;
+        for (size_t i = 0; i < nv; i++) {
+            std::string suffix;
+            if (aliases && i < aliases->size()) {
+                suffix = (*aliases)[i];
+            } else {
+                suffix = std::to_string(i);
+            }
+            std::string subName = rec.channel + "_" + suffix;
+            auto it = m_channelIndex.find(subName);
+            if (it == m_channelIndex.end()) {
+                ChannelSeries cs;
+                cs.name = subName;
+                m_channelIndex[subName] = m_series.size();
+                m_series.push_back(std::move(cs));
+                it = m_channelIndex.find(subName);
+            }
+            ChannelSeries& cs = m_series[it->second];
+            cs.xValues.push_back((float)rec.lineNumber);
+            float y = (float)rec.values[i];
+            if (hasPrefix(subName, "V6_") || subName == "V_D" || subName == "V7") {
+                y /= 1000.0f;
+            }
+            cs.yValues.push_back(y);
+        }
+    } else {
+        // Legacy: single channel, use 2nd value as Y
+        auto it = m_channelIndex.find(rec.channel);
+        if (it == m_channelIndex.end()) {
+            ChannelSeries cs;
+            cs.name = rec.channel;
+            m_channelIndex[rec.channel] = m_series.size();
+            m_series.push_back(std::move(cs));
+            it = m_channelIndex.find(rec.channel);
+        }
+        ChannelSeries& cs = m_series[it->second];
+        cs.xValues.push_back((float)rec.lineNumber);
+        float y = (float)(nv > 1 ? rec.values[1] : rec.values[0]);
+        if (hasPrefix(rec.channel, "V6_") || rec.channel == "V_D" || rec.channel == "V7") {
+            y /= 1000.0f;
+        }
+        cs.yValues.push_back(y);
     }
-    ChannelSeries& cs = m_series[it->second];
-    cs.xValues.push_back((float)cs.xValues.size());
-    float y = (float)rec.value2;
-    if (rec.channel == "V_D" || rec.channel == "V6" || rec.channel == "V7") {
-        y /= 1000.0f;
-    }
-    cs.yValues.push_back(y);
 }
 
-void DataParser::rebuildDerived() {
-    // Remove old V4-V5 derived series if present
-    auto it = m_channelIndex.find("V4-V5");
-    if (it != m_channelIndex.end()) {
-        size_t idx = it->second;
-        m_series.erase(m_series.begin() + idx);
-        m_channelIndex.erase(it);
-        for (auto& kv : m_channelIndex) {
-            if (kv.second > idx) kv.second--;
-        }
+void DataParser::setAlias(const std::string& channel, const std::vector<std::string>& aliases) {
+    if (aliases.empty()) {
+        m_aliases.erase(channel);
+    } else {
+        m_aliases[channel] = aliases;
     }
+}
 
-    // Rebuild V4-V5
-    auto v4it = m_channelIndex.find("V4");
-    auto v5it = m_channelIndex.find("V5");
-    if (v4it != m_channelIndex.end() && v5it != m_channelIndex.end()) {
-        const auto& v4 = m_series[v4it->second];
-        const auto& v5 = m_series[v5it->second];
-        size_t n = (std::min)(v4.yValues.size(), v5.yValues.size());
-        ChannelSeries diff;
-        diff.name = "V4-V5";
-        for (size_t i = 0; i < n; i++) {
-            diff.xValues.push_back(v4.xValues[i]);
-            diff.yValues.push_back(v4.yValues[i] - v5.yValues[i]);
-        }
-        m_channelIndex["V4-V5"] = m_series.size();
-        m_series.push_back(std::move(diff));
-    }
+void DataParser::removeAlias(const std::string& channel) {
+    m_aliases.erase(channel);
 }
 
 bool DataParser::load(const std::string& filepath) {
@@ -112,7 +132,6 @@ bool DataParser::load(const std::string& filepath) {
         pushRecord(rec);
     }
 
-    rebuildDerived();
     return true;
 }
 
@@ -123,6 +142,5 @@ bool DataParser::appendLine(const std::string& line) {
     rec.lineNumber = m_lineCounter;
     m_records.push_back(rec);
     pushRecord(rec);
-    rebuildDerived();
     return true;
 }

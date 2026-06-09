@@ -7,8 +7,7 @@
 struct RawRecord {
     int lineNumber;
     std::string channel;
-    int value1;
-    int value2;
+    std::vector<int> values;
 };
 
 struct ChannelSeries {
@@ -28,13 +27,16 @@ public:
     size_t channelCount() const { return m_series.size(); }
     size_t recordCount() const { return m_records.size(); }
 
+    void setAlias(const std::string& channel, const std::vector<std::string>& aliases);
+    void removeAlias(const std::string& channel);
+    const std::map<std::string, std::vector<std::string>>& aliases() const { return m_aliases; }
+
 private:
     bool parseOneLine(const char* line, RawRecord& outRec);
     void pushRecord(const RawRecord& rec);
-    void rebuildDerived();
-
     std::vector<RawRecord> m_records;
     std::vector<ChannelSeries> m_series;
     std::map<std::string, size_t> m_channelIndex;
+    std::map<std::string, std::vector<std::string>> m_aliases;
     int m_lineCounter = 0;
 };

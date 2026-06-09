@@ -2,6 +2,7 @@
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_win32.h"
 #include "implot.h"
+#include "implot_internal.h"
 #include "parser.h"
 #include "serial_reader.h"
 
@@ -53,6 +54,9 @@ struct AppState {
     float lineWidth = 1.5f;
     bool fitOnce = false;
     bool scatterMode = false;
+    bool userAdjustedView = false;
+    bool scrollToTail = false;
+    int  targetFPS = 30;
 
     // Serial mode
     DataMode     mode = DataMode::File;
@@ -156,7 +160,9 @@ static void renderUI(AppState& app) {
             ImGui::TextColored({1.0f, 0.5f, 0.3f, 1.0f}, "%s", app.statusMsg);
         }
 
-        ImGui::Checkbox("Auto-scroll", &app.autoScroll);
+        if (ImGui::Checkbox("Auto-scroll", &app.autoScroll)) {
+            if (app.autoScroll) app.userAdjustedView = false;
+        }
 
         ImGui::Separator();
 
@@ -208,10 +214,17 @@ static void renderUI(AppState& app) {
     ImGui::SameLine();
     if (ImGui::Button("All OFF")) std::fill(app.visible.begin(), app.visible.end(), 0);
 
-    if (ImGui::Button("Fit")) app.fitOnce = true;
+    if (ImGui::Button("Fit")) {
+        app.scrollToTail = true;
+        app.userAdjustedView = false;
+    }
     ImGui::SameLine();
-    if (ImGui::Button("Reset")) ImPlot::SetNextAxesToFit();
+    if (ImGui::Button("Reset")) {
+        ImPlot::SetNextAxesToFit();
+        app.userAdjustedView = false;
+    }
     ImGui::SliderFloat("Line", &app.lineWidth, 0.5f, 4.0f);
+    ImGui::SliderInt("FPS", &app.targetFPS, 5, 120);
     ImGui::SameLine();
     ImGui::Checkbox("Scatter", &app.scatterMode);
 
@@ -250,8 +263,28 @@ static void renderUI(AppState& app) {
         ImPlot::SetNextAxesToFit();
         app.fitOnce = false;
     }
-    if (app.dataLoaded && ImPlot::BeginPlot("##plot", ImVec2(-1, -1))) {
+    if (app.dataLoaded && ImPlot::BeginPlot("##plot", ImVec2(-1, -1),
+                                             ImPlotFlags_Crosshairs)) {
         ImPlot::SetupAxes("Line #", "Value");
+
+        // Scroll X to follow latest data, preserving current X zoom width
+        if (app.scrollToTail) {
+            app.scrollToTail = false;
+            float lastX = 0;
+            for (const auto& s : series) {
+                if (!s.xValues.empty() && s.xValues.back() > lastX)
+                    lastX = s.xValues.back();
+            }
+            ImPlotContext& gp = *GImPlot;
+            double xMin = gp.CurrentPlot->Axes[ImAxis_X1].Range.Min;
+            double xMax = gp.CurrentPlot->Axes[ImAxis_X1].Range.Max;
+            double xRange = xMax - xMin;
+            if (xRange > 0) {
+                gp.CurrentPlot->Axes[ImAxis_X1].SetRange(lastX - xRange, lastX);
+                gp.CurrentPlot->Axes[ImAxis_X1].HasRange = true;
+                gp.CurrentPlot->Axes[ImAxis_X1].RangeCond = ImPlotCond_Always;
+            }
+        }
 
         for (size_t i = 0; i < series.size(); i++) {
             if (!app.visible[i] || series[i].yValues.empty()) continue;
@@ -269,6 +302,12 @@ static void renderUI(AppState& app) {
                                  series[i].yValues.data(),
                                  (int)series[i].yValues.size());
             }
+        }
+
+        // Detect user manually adjusting the view (zoom only)
+        if (!app.userAdjustedView && ImPlot::IsPlotHovered()) {
+            if (ImGui::GetIO().MouseWheel != 0)
+                app.userAdjustedView = true;
         }
 
         ImPlot::EndPlot();
@@ -457,9 +496,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ImGui_ImplOpenGL3_Init();
 
     AppState app;
+    // Resolve default filepath relative to exe directory
+    {
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(nullptr, exePath, MAX_PATH);
+        std::string dir(exePath);
+        dir.resize(dir.rfind('\\') + 1);
+        std::snprintf(app.filepath, sizeof(app.filepath), "%s../doc/resis.txt", dir.c_str());
+    }
     // Auto-scan ports on startup
     app.portList = SerialReader::scanPorts();
     app.portIdx = app.portList.empty() ? -1 : 0;
+
+    LARGE_INTEGER perfFreq, perfStart, perfEnd;
+    QueryPerformanceFrequency(&perfFreq);
+    QueryPerformanceCounter(&perfStart);
 
     bool done = false;
     while (!done) {
@@ -482,15 +533,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
                 }
             }
             if (gotNew) {
-                if (!app.dataLoaded) {
+                bool firstData = !app.dataLoaded;
+                if (firstData) {
                     app.dataLoaded = true;
                     app.visible.assign(app.parser.channelCount(), 1);
                 }
                 if (app.parser.channelCount() > app.visible.size()) {
                     app.visible.resize(app.parser.channelCount(), 1);
                 }
-                if (app.autoScroll) {
+                if (firstData) {
                     app.fitOnce = true;
+                } else if (app.autoScroll && !app.userAdjustedView) {
+                    app.scrollToTail = true;
                 }
             }
         }
@@ -507,6 +561,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         ::SwapBuffers(wglData.hDC);
+
+        // Frame rate limiter
+        QueryPerformanceCounter(&perfEnd);
+        double elapsedMs = (double)(perfEnd.QuadPart - perfStart.QuadPart) * 1000.0 / perfFreq.QuadPart;
+        double targetMs = 1000.0 / app.targetFPS;
+        if (elapsedMs < targetMs) {
+            DWORD sleepMs = (DWORD)(targetMs - elapsedMs);
+            if (sleepMs > 0) ::Sleep(sleepMs);
+        }
+        QueryPerformanceCounter(&perfStart);
     }
 
     if (app.serialConnected) app.serial.close();
